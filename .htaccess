@@ -1,0 +1,5 @@
+Options -indexes
+
+# Prevent downloading of the sqlite database:
+RewriteEngine on
+RewriteRule ^(.*).(sqlite)$ /$1
