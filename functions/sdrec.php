@@ -25,7 +25,7 @@ function sdrec($directory, $database, $scanExif=FALSE, $filter=FALSE)
 				{
 					$subdirectories = explode('/',$path);
 					if(is_dir($path))
-					{	
+					{
 						sdrec($path, $database, $scanExif, $filter);
 						$name = sqlite_escape_string(end($subdirectories));
 						$filemtime = filemtime($path);
@@ -55,7 +55,8 @@ function sdrec($directory, $database, $scanExif=FALSE, $filter=FALSE)
 								$exif = exif_read_data($path, 0, true);
 								$comment = isset($exif['COMMENT']) ? sqlite_escape_string(utf8_encode(implode(', ',$exif['COMMENT']))) : NULL;
 								if(isset($exif['GPS']['GPSLatitude'])) {
-								    //$lat_ref = $exif['GPS']['GPSLatitudeRef'];
+								    	/*
+									//$lat_ref = $exif['GPS']['GPSLatitudeRef'];
 									$lat = $exif['GPS']['GPSLatitude'];
 									list($num, $dec) = explode('/', $lat[0]);
 									$lat_s = $num / $dec;
@@ -74,6 +75,10 @@ function sdrec($directory, $database, $scanExif=FALSE, $filter=FALSE)
 									$lon_v = $num / $dec;
 									$gps_lat = "'".($lat_s + $lat_m / 60.0 + $lat_v / 3600.0)."'";
 									$gps_lon = "'".($lon_s + $lon_m / 60.0 + $lon_v / 3600.0)."'";
+									*/
+
+									$gps_lat = getGps($exif['GPS']["GPSLatitude"], $exif['GPS']['GPSLatitudeRef']);
+									$gps_lon = getGps($exif['GPS']["GPSLongitude"], $exif['GPS']['GPSLongitudeRef']);
 								}
 							}
 							$path = sqlite_escape_string(str_replace('photos/', '',$path));
@@ -88,11 +93,37 @@ function sdrec($directory, $database, $scanExif=FALSE, $filter=FALSE)
 				}
 			}
 		}
-		closedir($directory_list); 
+		closedir($directory_list);
 		return TRUE;
 	}else{
-		return FALSE;	
+		return FALSE;
 	}
 }
 // ------------------------------------------------------------
+
+function getGps($exifCoord, $hemi) {
+
+    $degrees = count($exifCoord) > 0 ? gps2Num($exifCoord[0]) : 0;
+    $minutes = count($exifCoord) > 1 ? gps2Num($exifCoord[1]) : 0;
+    $seconds = count($exifCoord) > 2 ? gps2Num($exifCoord[2]) : 0;
+
+    $flip = ($hemi == 'W' or $hemi == 'S') ? -1 : 1;
+
+    return $flip * ($degrees + $minutes / 60 + $seconds / 3600);
+
+}
+
+function gps2Num($coordPart) {
+
+    $parts = explode('/', $coordPart);
+
+    if (count($parts) <= 0)
+        return 0;
+
+    if (count($parts) == 1)
+        return $parts[0];
+
+    return floatval($parts[0]) / floatval($parts[1]);
+}
+
 ?>
